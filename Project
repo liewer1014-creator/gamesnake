@@ -1,0 +1,74 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// -------------------------------
+// MQ-136 Gas Sensor + 2 LED Example
+// -------------------------------
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // กำหนดที่อยู่ของจอ I2C (บางรุ่นอาจเป็น 0x27 หรือ 0x3F)
+
+
+int mq136Pin = A0;       // ขา A0 ของเซนเซอร์
+int ledGreen = 12;       // ขาไฟเขียว
+int ledRed = 13;         // ขาไฟแดง
+
+int sensorValue = 0;     // ตัวแปรเก็บค่าที่อ่านได้จากเซนเซอร์
+float voltage = 0;       // ตัวแปรเก็บแรงดันไฟฟ้า
+int threshold = 400;     // ค่าที่กำหนดว่า "ตรวจพบก๊าซ" (ปรับได้ตามต้องการ)
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(ledGreen, OUTPUT);
+  pinMode(ledRed, OUTPUT);
+
+  // เริ่มต้นจอ LCD
+  lcd.init();
+  lcd.backlight();
+
+  lcd.setCursor(0, 0);
+  lcd.print("MQ-136 Gas Sensor");
+  lcd.setCursor(0, 1);
+  lcd.print("Starting...");
+  delay(2000);
+  lcd.clear();
+}
+
+void loop() {
+  sensorValue = analogRead(mq136Pin);
+  voltage = sensorValue * (5.0 / 1023.0);
+
+  Serial.print("Analog Value : ");
+  Serial.print(sensorValue);
+  Serial.print("\tVoltage : ");
+  Serial.println(voltage);
+
+  if (sensorValue > threshold) {
+    // 🔴 ตรวจพบก๊าซ
+    digitalWrite(ledRed, HIGH);
+    digitalWrite(ledGreen, LOW);
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Gas Detected!");
+    lcd.setCursor(0, 1);
+    lcd.print("Value: ");
+    lcd.print(sensorValue);
+
+    Serial.println("⚠️ ตรวจพบก๊าซ H2S เข้มข้น!");
+  } else {
+    // 🟢 อากาศปกติ
+    digitalWrite(ledRed, LOW);
+    digitalWrite(ledGreen, HIGH);
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Air Normal :)");
+    lcd.setCursor(0, 1);
+    lcd.print("Value: ");
+    lcd.print(sensorValue);
+
+    Serial.println("✅ อากาศปกติ ไม่มีการตรวจพบก๊าซ");
+  }
+
+  delay(1000);
+}
